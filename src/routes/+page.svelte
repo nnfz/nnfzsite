@@ -63,7 +63,7 @@
         ctx.save();
         ctx.translate(-offsetX, -offsetY);
         ctx.scale(zoom, zoom);
-        ctx.fillStyle = "#d9e3d5";
+        ctx.fillStyle = "#f3ecff";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         const text = "nnfz",
@@ -199,9 +199,11 @@
     :global(body) {
         margin: 0;
         overflow: hidden;
-        background: #1f2421;
+        background: #211f24;
+        color: #f3ecff;
     }
     canvas {
+        color: #f3ecff;
         width: 100vw;
         height: 100vh;
         touch-action: none;
