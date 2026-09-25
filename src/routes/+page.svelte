@@ -21,6 +21,7 @@
         weight: 500 + Math.floor(Math.random() * 501),
         italic: Math.random() > 0.5,
         angle: (Math.random() - 0.5) * 0.3,
+        gap: Math.random() * 0.1,
     }));
     function initCanvas(node: HTMLCanvasElement) {
         canvas = node;
@@ -66,24 +67,50 @@
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         const text = "nnfz",
-            fontSize = Math.min(canvas.width * 0.24, canvas.height * 0.28),
-            width = fontSize * 2.25;
-        let x = canvas.width / 2 - width / 2;
+            fontSize = Math.min(canvas.width * 0.24, canvas.height * 0.28);
+
+        // measure rotated bbox extents for each letter
+        const extents: { leftOffset: number; advance: number }[] = [];
+        for (let i = 0; i < text.length; i++) {
+            const st = letterStyles[i];
+            ctx.font =
+                (st.italic ? "italic " : "") +
+                st.weight + " " + fontSize + "px " + st.font;
+            const m = ctx.measureText(text[i]);
+            const cos = Math.cos(st.angle), sin = Math.sin(st.angle);
+            // left visual offset: rotate only the left corners
+            const leftXs = [
+                [-m.actualBoundingBoxLeft, -m.actualBoundingBoxAscent],
+                [-m.actualBoundingBoxLeft,  m.actualBoundingBoxDescent],
+            ].map(([cx, cy]) => cx * cos - cy * sin);
+            extents.push({
+                leftOffset: Math.min(...leftXs),
+                // advance along X using typographic width, not visual bbox
+                advance: m.width * cos,
+            });
+        }
+
+        // total width for centering
+        let totalWidth = 0;
+        for (let i = 0; i < text.length; i++) {
+            totalWidth += extents[i].advance;
+            if (i < text.length - 1)
+                totalWidth += letterStyles[i].gap * fontSize;
+        }
+
+        let x = canvas.width / 2 - totalWidth / 2;
         for (let i = 0; i < text.length; i++) {
             const st = letterStyles[i];
             ctx.save();
-            ctx.translate(x + fontSize * 0.28, canvas.height / 2);
+            ctx.translate(x - extents[i].leftOffset, canvas.height / 2);
             ctx.rotate(st.angle);
             ctx.font =
                 (st.italic ? "italic " : "") +
-                st.weight +
-                " " +
-                fontSize +
-                "px " +
-                st.font;
+                st.weight + " " + fontSize + "px " + st.font;
             ctx.fillText(text[i], 0, 0);
-            x += ctx.measureText(text[i]).width * 0.82;
             ctx.restore();
+            x += extents[i].advance;
+            if (i < text.length - 1) x += st.gap * fontSize;
         }
         ctx.restore();
     }
